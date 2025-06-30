@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("bff_groups")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+2ede2f606a33daf1a6d230827392b1a200518387")]
 [assembly: System.Reflection.AssemblyProductAttribute("bff_groups")]
 [assembly: System.Reflection.AssemblyTitleAttribute("bff_groups")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
