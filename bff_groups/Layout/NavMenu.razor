@@ -22,7 +22,7 @@
                 var navItemClass = $"nav-item px-3{(isActive ? " active" : "")}";
                 
                 <div class="@navItemClass">
-                    <NavLink class="nav-link" href="@($"/{_class.ClassName}")" Match="NavLinkMatch.All">
+                    <NavLink class="nav-link" href="@($"{_class.ClassName}")" Match="NavLinkMatch.All">
                         @_class.ClassName
                     </NavLink>
                     <button class="btn_delete" @onclick="() => AskToDelete(_class)">
