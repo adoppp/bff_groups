@@ -1,0 +1,388 @@
+@page "/{PageName}"
+@using bff_groups.dataBase
+@using bff_groups.Services
+@inject ClassesService ClassesService
+
+<h3 class="title">Klass: @PageName</h3>
+
+@if (_class != null)
+{
+    <p>ID: @_class.Id</p>
+    <div class="global_container">
+        <div class="container_students">
+            <div class="class_container list">
+                @if (students.Count != 0)
+                {
+                    <button class="btn small" @onclick="ToggleSelectAll">
+                        @(allSelected ? "Alle abwählen" : "Alle auswählen")
+                    </button>
+                    <p>@selectedStudents.Count von @students.Count ausgewählt</p>
+                }
+                <ul class="class_list">
+                    @if (!string.IsNullOrWhiteSpace(notification))
+                    {
+                        <p>@notification</p>
+                    }
+                    @foreach (var student in students)
+                    {
+                        <li @key="student.Id">
+                            <div>
+                                <input type="checkbox"
+                                       checked="@IsSelected(student.Id)"
+                                       @onchange="e => SetSelected(student.Id, (bool)e.Value)" />
+                                @student.Name
+                            </div>
+                            <button class="btn_delete" @onclick="() => AskDelete(student.Id)">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </li>
+                    }
+                </ul>
+            </div>
+
+            <div class="class_container">
+                <form @onsubmit="AddStudent">
+                    <input type="text" placeholder="Neuer Student" @bind="studentName" required />
+                    <button class="btn" type="submit" disabled="@string.IsNullOrWhiteSpace(studentName)">+ Erstellen</button>
+                </form>
+            </div>
+        </div>
+
+        @if (students.Count != 0)
+        {
+            <div class="container_group">
+                <div class="class_container">
+                    <form @onsubmit="GenerateGroups">
+                        <input type="number"
+                               placeholder="Gruppenzahl"
+                               @bind="GroupSize"
+                               min="1"
+                               required />
+                        <input type="number"
+                               placeholder="Studenten pro Gruppe (optional)"
+                               @bind="StudentsPerGroup"
+                               min="1" />
+                        @if (!string.IsNullOrWhiteSpace(notificationGroup))
+                        {
+                            <p class="validation_group">@notificationGroup</p>
+                        }
+                        <button class="btn" type="submit" disabled="@(!CanGenerate())">Generieren</button>
+                    </form>
+                    @if (groups?.Count > 0)
+                    {
+                        <button class="btn neumischen" @onclick="GenerateGroups" disabled="@(!CanGenerate())">Neu mischen</button>
+                    }
+                </div>
+
+                @if (groups?.Count > 0)
+                {
+                    <ul class="group_list">
+                        @for (int i = 0; i < groups.Count; i++)
+                        {
+                            <li class="group_item">
+                                <h4>Gruppe @(i + 1)</h4>
+                                <ul>
+                                    @foreach (var student in groups[i])
+                                    {
+                                        <li>@student.Name</li>
+                                    }
+                                </ul>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        }
+    </div>
+
+    @if (showDeletePopup)
+    {
+        <div class="@GetModalBackdropClass(showDeletePopup)">
+            <div class="modal-box">
+                <h4>Student löschen?</h4>
+                <p>Sind Sie sicher, dass Sie "<strong>@studentNameToDelete</strong>" löschen möchten?</p>
+                <div class="modal-actions">
+                    <button class="btn" @onclick="ConfirmDelete">Ja, löschen</button>
+                    <button class="btn cancel" @onclick="CancelDelete">Abbrechen</button>
+                </div>
+            </div>
+        </div>
+    }
+}
+else
+{
+    <p class="text-white text-center mt-xxl-5">404 Not found</p>
+}
+
+@code {
+    [Parameter]
+    public string PageName { get; set; }
+
+    private Classes? _class;
+    private List<Student> students = new();
+    private string studentName = string.Empty;
+    private HashSet<string> selectedStudents = new();
+    private bool allSelected = true;
+
+    private bool showDeletePopup = false;
+    private string studentNameToDelete = string.Empty;
+    private string studentToDeleteId = string.Empty;
+
+    private string groupSize = string.Empty;
+    private string studentsPerGroup = string.Empty;
+
+    private string notification = string.Empty;
+    private string notificationGroup = string.Empty;
+    private List<List<Student>> groups = new();
+    
+    private string GetModalBackdropClass(bool showDeletePopup)
+        => $"modal-backdrop{(showDeletePopup ? " above" : "")}";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        notification = string.Empty;
+        notificationGroup = string.Empty;
+        groups.Clear();
+        groupSize = studentsPerGroup = string.Empty;
+
+        var classes = await ClassesService.Get();
+        _class = classes.FirstOrDefault(c => c.ClassName.Equals(PageName, StringComparison.OrdinalIgnoreCase));
+
+        if (_class != null)
+        {
+            students = _class.Students.ToList();
+            selectedStudents = students.Select(s => s.Id).ToHashSet();
+            allSelected = selectedStudents.Count == students.Count;
+
+            if (students.Count == 0)
+                notification = "Keine Studenten vorhanden";
+        }
+        else
+        {
+            students.Clear();
+        }
+    }
+
+    private async Task AddStudent()
+    {
+        if (string.IsNullOrWhiteSpace(studentName) || _class == null)
+            return;
+
+        var newStudent = new Student
+        {
+            Id = Guid.NewGuid().ToString(),
+            Name = studentName.Trim(),
+            ClassesId = _class.Id
+        };
+
+        _class.Students.Add(newStudent);
+        var success = await ClassesService.Put(_class);
+
+        if (success)
+        {
+            studentName = string.Empty;
+            students.Add(newStudent);
+            selectedStudents.Add(newStudent.Id);
+            allSelected = selectedStudents.Count == students.Count;
+            groups.Clear();
+        }
+        else
+        {
+            notification = "Fehler beim Hinzufügen des Studenten.";
+        }
+    }
+
+    private void AskDelete(string studentId)
+    {
+        var student = students.FirstOrDefault(s => s.Id == studentId);
+        if (student != null)
+        {
+            studentToDeleteId = student.Id;
+            studentNameToDelete = student.Name;
+            showDeletePopup = true;
+        }
+    }
+
+    private async Task ConfirmDelete()
+    {
+        if (_class == null || string.IsNullOrEmpty(studentToDeleteId))
+            return;
+
+        var student = _class.Students.FirstOrDefault(s => s.Id == studentToDeleteId);
+        if (student != null)
+        {
+            _class.Students.Remove(student);
+            var success = await ClassesService.Put(_class);
+
+            if (success)
+            {
+                students.RemoveAll(s => s.Id == studentToDeleteId);
+                selectedStudents.Remove(studentToDeleteId);
+                allSelected = selectedStudents.Count == students.Count;
+                groups.Clear();
+            }
+            else
+            {
+                notification = "Fehler beim Löschen des Studenten.";
+            }
+        }
+        CancelDelete();
+    }
+
+    private void CancelDelete()
+    {
+        showDeletePopup = false;
+        studentNameToDelete = string.Empty;
+        studentToDeleteId = string.Empty;
+    }
+
+    private bool IsSelected(string studentId) => selectedStudents.Contains(studentId);
+
+    private void SetSelected(string studentId, bool isSelected)
+    {
+        if (isSelected)
+            selectedStudents.Add(studentId);
+        else
+            selectedStudents.Remove(studentId);
+
+        allSelected = selectedStudents.Count == students.Count;
+        StateHasChanged();
+    }
+
+    private void ToggleSelectAll()
+    {
+        if (allSelected)
+            selectedStudents.Clear();
+        else
+            selectedStudents = students.Select(s => s.Id).ToHashSet();
+
+        allSelected = !allSelected;
+        StateHasChanged();
+    }
+
+    private bool CanGenerate()
+    {
+        if (!int.TryParse(groupSize, out int groupCount) || groupCount <= 0)
+            return false;
+
+        return students.Count > 0 && selectedStudents.Count > 0 && groupCount <= selectedStudents.Count;
+    }
+
+    private string GroupSize
+    {
+        get => groupSize;
+        set
+        {
+            groupSize = value;
+            ValidateGroupInputs();
+            StateHasChanged();
+        }
+    }
+
+    private string StudentsPerGroup
+    {
+        get => studentsPerGroup;
+        set
+        {
+            studentsPerGroup = value;
+            ValidateGroupInputs();
+            StateHasChanged();
+        }
+    }
+
+    private void ValidateGroupInputs()
+    {
+        notificationGroup = string.Empty;
+
+        var selected = students.Where(s => selectedStudents.Contains(s.Id)).ToList();
+
+        if (selected.Count == 0)
+        {
+            notificationGroup = "Keine Studenten ausgewählt";
+            return;
+        }
+
+        if (!int.TryParse(groupSize, out int groupCount) || groupCount <= 0)
+        {
+            notificationGroup = "Ungültige Gruppenzahl";
+            return;
+        }
+
+        if (int.TryParse(studentsPerGroup, out int perGroup) && perGroup > 0)
+        {
+            int required = groupCount * perGroup;
+            if (required > selected.Count)
+                notificationGroup = $"Nicht genug Studenten für {groupCount} Gruppen mit je {perGroup} Studenten.";
+        }
+        else
+        {
+            if (groupCount > selected.Count)
+                notificationGroup = "Gruppenzahl darf nicht größer sein als ausgewählte Studenten";
+        }
+    }
+
+    private void GenerateGroups()
+    {
+        var selected = students.Where(s => selectedStudents.Contains(s.Id)).ToList();
+
+        if (selected.Count == 0)
+        {
+            notificationGroup = "Keine Studenten ausgewählt";
+            groups.Clear();
+            return;
+        }
+
+        if (!int.TryParse(groupSize, out int groupCount) || groupCount <= 0)
+        {
+            notificationGroup = "Ungültige Gruppenzahl";
+            groups.Clear();
+            return;
+        }
+
+        if (int.TryParse(studentsPerGroup, out int perGroup) && perGroup > 0)
+        {
+            int required = groupCount * perGroup;
+            if (required > selected.Count)
+            {
+                notificationGroup = $"Nicht genug Studenten für {groupCount} Gruppen mit je {perGroup} Studenten.";
+                groups.Clear();
+                return;
+            }
+
+            var trimmed = selected.OrderBy(_ => Guid.NewGuid()).Take(required).ToList();
+
+            groups = new List<List<Student>>();
+            for (int i = 0; i < groupCount; i++)
+                groups.Add(new List<Student>());
+
+            int idx = 0;
+            foreach (var student in trimmed)
+            {
+                groups[idx].Add(student);
+                idx = (idx + 1) % groupCount;
+            }
+        }
+        else
+        {
+            if (groupCount > selected.Count)
+            {
+                notificationGroup = "Gruppenzahl darf nicht größer sein als ausgewählte Studenten";
+                groups.Clear();
+                return;
+            }
+
+            groups = new List<List<Student>>();
+            for (int i = 0; i < groupCount; i++)
+                groups.Add(new List<Student>());
+
+            var shuffled = selected.OrderBy(_ => Guid.NewGuid()).ToList();
+
+            int idx = 0;
+            foreach (var student in shuffled)
+            {
+                groups[idx].Add(student);
+                idx = (idx + 1) % groupCount;
+            }
+        }
+    }
+}

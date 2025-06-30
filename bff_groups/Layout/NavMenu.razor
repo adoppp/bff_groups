@@ -1,0 +1,140 @@
+﻿@using bff_groups.dataBase
+@using bff_groups.Services
+@inject NavigationManager NavManager
+@inject ClassesService ClassesService
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler"/>
+
+<div class="title">
+    Bff-Gruppen
+</div>
+
+<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+    <div class="class_container list">
+        <h1 class="title">Klassen</h1>
+        <nav class="flex-column class_list">
+            @foreach (var _class in _classes)
+            {
+                var currentPath = NavManager.ToBaseRelativePath(NavManager.Uri).TrimEnd('/');
+                var classPath = _class.ClassName.TrimEnd('/');
+                var isActive = currentPath.Equals(classPath, StringComparison.OrdinalIgnoreCase);
+                
+                var navItemClass = $"nav-item px-3{(isActive ? " active" : "")}";
+                
+                <div class="@navItemClass">
+                    <NavLink class="nav-link" href="@($"/{_class.ClassName}")" Match="NavLinkMatch.All">
+                        @_class.ClassName
+                    </NavLink>
+                    <button class="btn_delete" @onclick="() => AskToDelete(_class)">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            }
+        </nav>
+    </div>
+
+    <div class="class_container">
+        <form @onsubmit="AddClassAsync">
+            <input type="text" placeholder="Neue Klasse" @bind="_className" id="classNameInput" required="required"/>
+            @if (isInputError)
+            {
+                <p class="error">@inputErrorMessage</p>
+            }
+            <button class="btn" type="submit">+ Erstellen</button>
+        </form>
+    </div>
+</div>
+
+@if (showDeleteClassPopup)
+{
+    <div class="modal-backdrop_class">
+        <div class="modal-box_class">
+            <h4>Klass löschen?</h4>
+            <p>Sind Sie sicher, dass Sie "<strong>@globalClassToDelete.ClassName</strong>" löschen möchten?</p>
+            <div class="modal-actions_class">
+                <button class="btn" @onclick="ConfirmDeleteAsync">Ja, löschen</button>
+                <button class="btn cancel" @onclick="() => showDeleteClassPopup = false">Abbrechen</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string _className = string.Empty;
+    private List<Classes> _classes = new();
+    private bool isInputError;
+    private string inputErrorMessage = string.Empty;
+    private bool showDeleteClassPopup = false;
+    private Classes? globalClassToDelete;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _classes = await ClassesService.Get();
+    }
+
+    private async Task AddClassAsync()
+    {
+        isInputError = false;
+        inputErrorMessage = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(_className))
+            return;
+
+        if (!IsValidClassName(_className))
+        {
+            isInputError = true;
+            inputErrorMessage = "Das Format muss '5A' sein (eine Zahl und ein Großbuchstabe).";
+            return;
+        }
+
+        if (_classes.Any(c => c.ClassName.Equals(_className, StringComparison.OrdinalIgnoreCase)))
+        {
+            isInputError = true;
+            inputErrorMessage = "Diese Klasse ist schon erstellt.";
+            return;
+        }
+
+        bool success = await ClassesService.Add(_className);
+        if (success)
+        {
+            _className = string.Empty;
+            _classes = await ClassesService.Get();
+        }
+        else
+        {
+            isInputError = true;
+            inputErrorMessage = "Fehler beim Hinzufügen der Klasse.";
+        }
+    }
+
+    private void AskToDelete(Classes classToDelete)
+    {
+        showDeleteClassPopup = true;
+        globalClassToDelete = classToDelete;
+    }
+
+    private async Task ConfirmDeleteAsync()
+    {
+        if (globalClassToDelete != null)
+        {
+            bool success = await ClassesService.Delete(globalClassToDelete.Id);
+            if (success)
+            {
+                _classes = await ClassesService.Get();
+            }
+            else
+            {
+                // handle error if needed
+            }
+        }
+        showDeleteClassPopup = false;
+        globalClassToDelete = null;
+    }
+
+    private bool IsValidClassName(string input)
+    {
+        return input.Length == 2 &&
+               char.IsDigit(input[0]) &&
+               char.IsUpper(input[1]);
+    }
+}

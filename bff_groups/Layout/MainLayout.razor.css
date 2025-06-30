@@ -1,0 +1,160 @@
+.page {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background-color: #080e10;
+}
+
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed,
+figure, figcaption, footer, header, hgroup,
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: 100%;
+    font: inherit;
+    vertical-align: baseline;
+}
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure,
+footer, header, hgroup, menu, nav, section {
+    display: block;
+}
+body {
+    line-height: 1;
+}
+ol, ul {
+    list-style: none;
+}
+blockquote, q {
+    quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+    content: '';
+    content: none;
+}
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+
+main {
+    flex: 1;
+    padding-bottom: 16px;
+    height: 100%;
+}
+
+*::-webkit-scrollbar {
+    height: 5px;
+    width: 5px;
+}
+*::-webkit-scrollbar-track {
+    border-radius: 5px;
+    background-color: #C0C9CB;
+}
+
+*::-webkit-scrollbar-track:hover {
+    background-color: #DDE7E9;
+}
+
+*::-webkit-scrollbar-track:active {
+    background-color: #909698;
+}
+
+*::-webkit-scrollbar-thumb {
+    border-radius: 5px;
+    background-color: #5A827E;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background-color: #84AE92;
+}
+
+*::-webkit-scrollbar-thumb:active {
+    background-color: #92D2B2;
+}
+
+.sidebar {
+    width: 340px !important;
+    padding: 16px;
+    border-right: solid 2px #84AE92;
+    z-index: 11000;
+}
+
+.top-row {
+    font-size: 36px;
+    font-weight: bold;
+    background-color:  #11181d;
+    justify-content: flex-start;
+    height: 3.5rem;
+    display: flex;
+    align-items: center;
+    margin-bottom: 36px;
+}
+
+    .top-row ::deep a, .top-row ::deep .btn-link {
+        white-space: nowrap;
+        margin-left: 1.5rem;
+        text-decoration: none;
+    }
+
+        .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
+            text-decoration: underline;
+        }
+
+        .top-row ::deep a:first-child {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+@media (max-width: 640.98px) {
+    .top-row {
+        justify-content: space-between;
+    }
+
+        .top-row ::deep a, .top-row ::deep .btn-link {
+            margin-left: 0;
+        }
+}
+
+@media (min-width: 641px) {
+    .page {
+        flex-direction: row;
+    }
+
+    .sidebar {
+        width: 250px;
+        height: 100vh;
+        position: sticky;
+        top: 0;
+    }
+
+    .top-row {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+
+        .top-row.auth ::deep a:first-child {
+            flex: 1;
+            text-align: right;
+            width: 0;
+        }
+
+    .top-row, article {
+        padding-left: 2rem !important;
+        padding-right: 1.5rem !important;
+    }
+}
