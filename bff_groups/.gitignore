@@ -1,0 +1,56 @@
+# Ignore build outputs
+bin/
+obj/
+
+# User-specific files
+*.user
+*.rsuser
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Visual Studio Code settings folder
+.vscode/
+
+# Rider IDE files
+.idea/
+
+# DotNet CLI tool files
+*.dotCover
+
+# Rider project files
+*.sln.iml
+
+# npm packages
+node_modules/
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Resharper files
+_ReSharper*/
+
+# MacOS Finder files
+.DS_Store
+
+# Windows thumbnail cache
+Thumbs.db
+
+# Publish output folder (if you publish locally)
+publish/
+
+# Azure Pipelines
+.vs/
+
+# Environment files (optional, if you want to keep .env out of git)
+.env
+.env.local
+.env.*.local
+
+# Client-side cache files
+wwwroot/css/*.map
+wwwroot/js/*.map
