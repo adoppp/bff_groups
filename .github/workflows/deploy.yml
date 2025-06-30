@@ -3,7 +3,7 @@ name: Deploy Blazor WebAssembly to GitHub Pages
 on:
   push:
     branches:
-      - main  # или ваша основная ветка
+      - main  # твоя основная ветка
 
 jobs:
   build-deploy:
@@ -16,13 +16,17 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 9.0.x  # версия .NET, которую вы используете
+          dotnet-version: 9.0.x
 
       - name: Restore dependencies
         run: dotnet restore
 
+      - name: Replace base href for GitHub Pages
+        run: |
+          sed -i 's|<base href="/">|<base href="/bff_groups/">|' ./bff_groups/wwwroot/index.html
+
       - name: Publish Blazor WebAssembly
-        run: dotnet publish -c Release -o ./publish
+        run: dotnet publish bff_groups -c Release -o ./publish
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
